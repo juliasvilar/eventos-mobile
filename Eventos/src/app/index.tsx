@@ -11,8 +11,12 @@ export default function home() {
       <View>
         <Text> Gerenciador de Eventos</Text>
         <Text> da sua Empresa</Text>
-
-        <CustomButton title="Acessar" onPress={() => router.push("/eventos")} />
+        <View>
+          <CustomButton
+            title="Acessar"
+            onPress={() => router.push("/eventos")}
+          />
+        </View>
       </View>
     </ScrollView>
   );
