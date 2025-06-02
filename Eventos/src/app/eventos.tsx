@@ -60,6 +60,14 @@ const EventosScreen = () => {
       const locaisCarregados = await buscarLocais();
       const categoriasCarregadas = await buscarCategorias();
 
+      // --- LOGS PARA DEBUGAR A CARGA DE DADOS ---
+      console.log("Locais carregados:", locaisCarregados);
+      if (locaisCarregados && locaisCarregados.length === 0) {
+        console.warn("A busca por locais retornou uma lista vazia. Verifique seu backend ou se há locais cadastrados.");
+      }
+      console.log("Categorias carregadas:", categoriasCarregadas);
+      // --- FIM DOS LOGS ---
+
       setLocais(locaisCarregados);
       setCategorias(categoriasCarregadas);
 
@@ -76,7 +84,8 @@ const EventosScreen = () => {
         "Não foi possível carregar os dados. Verifique a conexão e as chaves do Back4app.\n" +
           error.message
       );
-      console.error(error);
+      // --- LOG DE ERRO MAIS DESCRITIVO ---
+      console.error("Erro ao carregar dados iniciais:", error);
     } finally {
       setLoading(false);
     }
@@ -112,7 +121,7 @@ const EventosScreen = () => {
       carregarDadosIniciais();
     } catch (error: any) {
       Alert.alert("Erro ao criar evento", error.message);
-      console.error(error);
+      console.error("Erro ao criar evento:", error); // Log mais específico
     } finally {
       setLoading(false);
     }
@@ -137,7 +146,7 @@ const EventosScreen = () => {
       carregarDadosIniciais();
     } catch (error: any) {
       Alert.alert("Erro ao deletar", error.message);
-      console.error(error);
+      console.error("Erro ao deletar evento:", error); // Log mais específico
     } finally {
       setLoading(false);
     }
@@ -163,14 +172,15 @@ const EventosScreen = () => {
   const renderEventoItem = ({ item }: { item: IEventoFormatado }) => (
     <View style={styles.eventItem}>
       <Text style={styles.eventTitle}>{item.NomeEvt}</Text>
-      <Text>Descrição: {item.Descricao}</Text>
-      <Text>Data: {new Date(item.Data).toLocaleString()}</Text>
-      <Text>Status: {item.status ? "Ativo" : "Inativo"}</Text>
-      <Text>Local: {item.local ? item.local.Nome : "N/A"}</Text>
-      <Text>
+      {/* Aplicação do estilo eventItemText para cor preta */}
+      <Text style={styles.eventItemText}>Descrição: {item.Descricao}</Text>
+      <Text style={styles.eventItemText}>Data: {new Date(item.Data).toLocaleString()}</Text>
+      <Text style={styles.eventItemText}>Status: {item.status ? "Ativo" : "Inativo"}</Text>
+      <Text style={styles.eventItemText}>Local: {item.local ? item.local.Nome : "N/A"}</Text>
+      <Text style={styles.eventItemText}>
         Capacidade do Local: {item.local ? item.local.Capacidade : "N/A"}
       </Text>
-      <Text>
+      <Text style={styles.eventItemText}>
         Categorias:{" "}
         {item.categorias
           ? item.categorias.map((c: ICategoriaFormatada) => c.Nome).join(", ")
@@ -231,6 +241,7 @@ const EventosScreen = () => {
               setNovoEvento({ ...novoEvento, nomeEvt: text })
             }
             placeholder="Digite o nome do evento"
+            placeholderTextColor="#888" // Adiciona cor ao placeholder
           />
 
           <Text style={styles.label}>Descrição*</Text>
@@ -241,6 +252,7 @@ const EventosScreen = () => {
               setNovoEvento({ ...novoEvento, Descricao: text })
             }
             placeholder="Digite a descrição do evento"
+            placeholderTextColor="#888" // Adiciona cor ao placeholder
             multiline
             numberOfLines={4}
           />
@@ -250,7 +262,8 @@ const EventosScreen = () => {
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text>{novoEvento.Data.toLocaleString()}</Text>
+            {/* Texto da data com cor preta garantida */}
+            <Text style={{ color: '#333' }}>{novoEvento.Data.toLocaleString()}</Text>
           </TouchableOpacity>
 
           {showDatePicker && (
@@ -274,6 +287,8 @@ const EventosScreen = () => {
               setNovoEvento({ ...novoEvento, localId: itemValue })
             }
             style={styles.picker}
+            // Adicione cor para o texto do Picker.Item caso necessário (específico para Android)
+            itemStyle={{ color: '#333' }}
           >
             <Picker.Item label="Selecione um local..." value="" />
             {locais.map((local) => (
@@ -346,11 +361,15 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     backgroundColor: "#fff",
     borderRadius: 8,
-    shadowColor: "#000",
+    shadowColor: "#333", // Alterado para preto para mais visibilidade
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     elevation: 3,
+  },
+  eventItemText: { // Novo estilo para textos dentro do item do evento
+    color: '#333',
+    marginBottom: 2,
   },
   eventTitle: {
     fontSize: 18,
@@ -393,6 +412,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     fontSize: 16,
+    color: '#333', // Garante a cor do texto digitado
   },
   multilineInput: {
     height: 100,
@@ -410,6 +430,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 5,
     marginBottom: 15,
+    color: '#333', // Pode ajudar em alguns casos a garantir a cor do texto do picker
   },
   categoriasContainer: {
     flexDirection: "row",
