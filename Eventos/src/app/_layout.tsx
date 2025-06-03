@@ -14,7 +14,7 @@ export default function Layout() {
       <Stack.Screen
         name="eventos"
         options={{
-          title: "Eventos",
+          title: "",
           headerBackTitle: "Voltar",
         }}
       />
