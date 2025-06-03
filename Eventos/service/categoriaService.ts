@@ -1,14 +1,13 @@
-// src/services/categoriaService.ts
-import Parse from './parseConfig';
-import { ICategoriaFormatada, IParseCategoria } from '@/src/types';
+import api from './api';
+import { ICategoriaFormatada } from '@/src/types';
 
-export const criarCategoria = async (Nome: string): Promise<IParseCategoria> => {
-  const Categoria = Parse.Object.extend('Categoria');
-  const novaCategoria = new Categoria(); // Não precisa de 'as IParseCategoria'
-  novaCategoria.set('Nome', Nome);
+export const criarCategoria = async (Nome: string): Promise<ICategoriaFormatada> => {
   try {
-    const categoriaSalva = await novaCategoria.save();
-    return categoriaSalva as IParseCategoria; // Cast ao salvar
+    const response = await api.post('/classes/Categoria', { Nome });
+    return {
+      id: response.data.objectId,
+      Nome: response.data.Nome,
+    };
   } catch (error) {
     console.error('Erro ao criar categoria:', error);
     throw error;
@@ -16,12 +15,11 @@ export const criarCategoria = async (Nome: string): Promise<IParseCategoria> => 
 };
 
 export const buscarCategorias = async (): Promise<ICategoriaFormatada[]> => {
-  const query = new Parse.Query<IParseCategoria>('Categoria');
   try {
-    const categorias = await query.find();
-    return categorias.map(categoria => ({
-      id: categoria.id,
-      Nome: categoria.get('Nome') as string // Cast para string
+    const response = await api.get('/classes/Categoria');
+    return response.data.results.map((cat: any) => ({
+      id: cat.objectId,
+      Nome: cat.Nome,
     }));
   } catch (error) {
     console.error('Erro ao buscar categorias:', error);
@@ -30,12 +28,11 @@ export const buscarCategorias = async (): Promise<ICategoriaFormatada[]> => {
 };
 
 export const buscarCategoriaPorId = async (categoriaId: string): Promise<ICategoriaFormatada | null> => {
-  const query = new Parse.Query<IParseCategoria>('Categoria');
   try {
-    const categoria = await query.get(categoriaId);
+    const response = await api.get(`/classes/Categoria/${categoriaId}`);
     return {
-      id: categoria.id,
-      Nome: categoria.get('Nome') as string
+      id: response.data.objectId,
+      Nome: response.data.Nome,
     };
   } catch (error) {
     console.error('Erro ao buscar categoria por ID:', categoriaId, error);
@@ -43,14 +40,16 @@ export const buscarCategoriaPorId = async (categoriaId: string): Promise<ICatego
   }
 };
 
-export const atualizarCategoria = async (categoriaId: string, newData: { Nome?: string }): Promise<IParseCategoria> => {
-  const Categoria = Parse.Object.extend('Categoria');
-  const categoria = new Categoria();
-  categoria.set('objectId', categoriaId);
-  if (newData.Nome) categoria.set('Nome', newData.Nome);
+export const atualizarCategoria = async (
+  categoriaId: string,
+  newData: { Nome?: string }
+): Promise<ICategoriaFormatada> => {
   try {
-    const categoriaAtualizada = await categoria.save();
-    return categoriaAtualizada as IParseCategoria;
+    const response = await api.put(`/classes/Categoria/${categoriaId}`, newData);
+    return {
+      id: response.data.objectId,
+      Nome: response.data.Nome,
+    };
   } catch (error) {
     console.error('Erro ao atualizar categoria:', error);
     throw error;
@@ -58,12 +57,8 @@ export const atualizarCategoria = async (categoriaId: string, newData: { Nome?: 
 };
 
 export const deletarCategoria = async (categoriaId: string): Promise<void> => {
-  const Categoria = Parse.Object.extend('Categoria');
-  const categoria = new Categoria();
-  categoria.set('objectId', categoriaId);
   try {
-    await categoria.destroy();
-    console.log('Categoria deletada com sucesso:', categoriaId);
+    await api.delete(`/classes/Categoria/${categoriaId}`);
   } catch (error) {
     console.error('Erro ao deletar categoria:', error);
     throw error;

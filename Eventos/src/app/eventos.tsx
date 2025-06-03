@@ -14,18 +14,14 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
-// Importe as funções dos seus arquivos de serviço
 import {
   criarEvento,
   buscarEventos,
-  buscarCategoriasDoEvento,
   deletarEvento,
+  atualizarEvento,
 } from "@/service/eventoService";
-import { criarLocal, buscarLocais } from "@/service/localService";
-import { criarCategoria, buscarCategorias } from "@/service/categoriaService";
-
-// Importe suas interfaces de tipos
+import { buscarLocais } from "@/service/localService";
+import { buscarCategorias } from "@/service/categoriaService";
 import {
   IEventoFormatado,
   ILocalFormatado,
@@ -37,7 +33,10 @@ const EventosScreen = () => {
   const [locais, setLocais] = useState<ILocalFormatado[]>([]);
   const [categorias, setCategorias] = useState<ICategoriaFormatada[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [ModalVisible, setModalVisible] = useState<boolean>(false);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [eventoEditando, setEventoEditando] = useState<string | null>(null);
+  const [originalCategoriasIds, setOriginalCategoriasIds] = useState<string[]>([]);
 
   const [novoEvento, setNovoEvento] = useState({
     nomeEvt: "",
@@ -47,63 +46,110 @@ const EventosScreen = () => {
     localId: "",
     categoriasIds: [] as string[],
   });
-  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  
 
   useEffect(() => {
     carregarDadosIniciais();
   }, []);
 
   const carregarDadosIniciais = async () => {
-    setLoading(true);
-    try {
-      const eventosCarregados = await buscarEventos();
-      const locaisCarregados = await buscarLocais();
-      const categoriasCarregadas = await buscarCategorias();
+  setLoading(true);
+  try {
+    const eventosCarregados = await buscarEventos();
+    const locaisCarregados = await buscarLocais();
+    const categoriasCarregadas = await buscarCategorias();
 
-      // --- LOGS PARA DEBUGAR A CARGA DE DADOS ---
-      console.log("Locais carregados:", locaisCarregados);
-      if (locaisCarregados && locaisCarregados.length === 0) {
-        console.warn("A busca por locais retornou uma lista vazia. Verifique seu backend ou se há locais cadastrados.");
-      }
-      console.log("Categorias carregadas:", categoriasCarregadas);
-      // --- FIM DOS LOGS ---
+    setLocais(locaisCarregados);
+    setCategorias(categoriasCarregadas);
 
-      setLocais(locaisCarregados);
-      setCategorias(categoriasCarregadas);
+    const eventosFormatados: IEventoFormatado[] = eventosCarregados.map((evento: any) => ({
+      id: evento.objectId,
+      NomeEvt: evento.NomeEvt,
+      Descricao: evento.Descricao,
+      Data: new Date(evento.Data.iso),
+      status: evento.status,
+      local: evento.local ? {
+        id: evento.local.objectId,
+        Nome: evento.local.Nome,
+        Capacidade: evento.local.Capacidade
+      } : null,
+      categorias: evento.categorias?.results?.map((cat: any) => ({
+        id: cat.objectId,
+        Nome: cat.Nome
+      })) || []
+    }));
 
-      const eventosComCategorias: IEventoFormatado[] = await Promise.all(
-        eventosCarregados.map(async (evento: IEventoFormatado) => {
-          const cats = await buscarCategoriasDoEvento(evento.id);
-          return { ...evento, categorias: cats };
-        })
+    console.log("Eventos formatados:", eventosFormatados); // Para debug
+    setEventos(eventosFormatados);
+  } catch (error: any) {
+    Alert.alert("Erro", "Não foi possível carregar os dados.\n" + error.message);
+    console.error("Erro ao carregar dados iniciais:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const prepararEdicao = (evento: IEventoFormatado) => {
+  setEventoEditando(evento.id);
+  setOriginalCategoriasIds(evento.categorias?.map(c => c.id) || []);
+  setNovoEvento({
+    nomeEvt: evento.NomeEvt,
+    Descricao: evento.Descricao,
+    Data: evento.Data,
+    status: evento.status,
+    localId: evento.local?.id || "",
+    categoriasIds: evento.categorias?.map(c => c.id) || [],
+  });
+  setModalVisible(true);
+};
+
+  const handleCriarOuAtualizarEvento = async () => {
+  console.log("Dados sendo enviados:", {
+    ...novoEvento,
+    categoriasIds: novoEvento.categoriasIds,
+    categoriasCount: novoEvento.categoriasIds.length
+  });
+
+  if (!novoEvento.nomeEvt || !novoEvento.Descricao || !novoEvento.localId) {
+    Alert.alert("Atenção", "Preencha todos os campos obrigatórios!");
+    return;
+  }
+
+  if (novoEvento.categoriasIds.length === 0) {
+    Alert.alert("Atenção", "Selecione pelo menos uma categoria!");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    if (eventoEditando) {
+      // Calcular diferenças nas categorias
+      const categoriasAtuais = new Set(novoEvento.categoriasIds);
+      const categoriasOriginais = new Set(originalCategoriasIds);
+      
+      const categoriasParaAdicionar = [...categoriasAtuais].filter(
+        id => !categoriasOriginais.has(id)
       );
-      setEventos(eventosComCategorias);
-    } catch (error: any) {
-      Alert.alert(
-        "Erro",
-        "Não foi possível carregar os dados. Verifique a conexão e as chaves do Back4app.\n" +
-          error.message
+      const categoriasParaRemover = [...categoriasOriginais].filter(
+        id => !categoriasAtuais.has(id)
       );
-      // --- LOG DE ERRO MAIS DESCRITIVO ---
-      console.error("Erro ao carregar dados iniciais:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleCriarEvento = async () => {
-    if (
-      !novoEvento.nomeEvt ||
-      !novoEvento.Descricao ||
-      !novoEvento.localId ||
-      novoEvento.categoriasIds.length === 0
-    ) {
-      Alert.alert("Atenção", "Preencha todos os campos obrigatórios!");
-      return;
-    }
-
-    setLoading(true);
-    try {
+      await atualizarEvento(
+        eventoEditando,
+        {
+          NomeEvt: novoEvento.nomeEvt,
+          Descricao: novoEvento.Descricao,
+          Data: novoEvento.Data,
+          status: novoEvento.status,
+        },
+        novoEvento.localId,
+        categoriasParaAdicionar,
+        categoriasParaRemover
+      );
+      Alert.alert("Sucesso", "Evento atualizado com sucesso!");
+    } else {
       await criarEvento(
         {
           NomeEvt: novoEvento.nomeEvt,
@@ -114,18 +160,28 @@ const EventosScreen = () => {
         novoEvento.localId,
         novoEvento.categoriasIds
       );
-
       Alert.alert("Sucesso", "Evento criado com sucesso!");
-      setModalVisible(false);
-      resetForm();
-      carregarDadosIniciais();
-    } catch (error: any) {
-      Alert.alert("Erro ao criar evento", error.message);
-      console.error("Erro ao criar evento:", error); // Log mais específico
-    } finally {
-      setLoading(false);
     }
-  };
+
+    setModalVisible(false);
+    resetForm();
+    await carregarDadosIniciais();
+  } catch (error: any) {
+    console.error("Erro completo:", {
+      error: error,
+      response: error.response?.data
+    });
+    Alert.alert(
+      "Erro", 
+      eventoEditando 
+        ? `Erro ao atualizar evento: ${error.message}`
+        : `Erro ao criar evento: ${error.message}`
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const resetForm = () => {
     setNovoEvento({
@@ -136,61 +192,63 @@ const EventosScreen = () => {
       localId: "",
       categoriasIds: [],
     });
+    setEventoEditando(null);
+    setOriginalCategoriasIds([]); // Reset original categories
   };
 
   const handleDeletarEvento = async (id: string) => {
     setLoading(true);
     try {
-      await deletarEvento(id);
-      Alert.alert("Sucesso", "Evento deletado!");
-      carregarDadosIniciais();
+      await deletarEvento(id); // Using deletarEvento which only deletes the event object
+      Alert.alert("Sucesso", "Evento deletado com sucesso!");
+      await carregarDadosIniciais();
     } catch (error: any) {
       Alert.alert("Erro ao deletar", error.message);
-      console.error("Erro ao deletar evento:", error); // Log mais específico
+      console.error("Erro ao deletar evento:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  console.log('IDs de categorias enviados:', {
+  localId: novoEvento.localId,
+  categoriasIds: novoEvento.categoriasIds,
+  todasValidas: novoEvento.categoriasIds.every(id => 
+    typeof id === 'string' && id.length > 0
+  )
+});
+
   const toggleCategoria = (categoriaId: string) => {
-    setNovoEvento((prev) => {
-      const alreadySelected = prev.categoriasIds.includes(categoriaId);
-      if (alreadySelected) {
-        return {
-          ...prev,
-          categoriasIds: prev.categoriasIds.filter((id) => id !== categoriaId),
-        };
-      } else {
-        return {
-          ...prev,
-          categoriasIds: [...prev.categoriasIds, categoriaId],
-        };
-      }
-    });
+    setNovoEvento(prev => ({
+      ...prev,
+      categoriasIds: prev.categoriasIds.includes(categoriaId)
+        ? prev.categoriasIds.filter(id => id !== categoriaId)
+        : [...prev.categoriasIds, categoriaId]
+    }));
   };
 
   const renderEventoItem = ({ item }: { item: IEventoFormatado }) => (
     <View style={styles.eventItem}>
       <Text style={styles.eventTitle}>{item.NomeEvt}</Text>
-      {/* Aplicação do estilo eventItemText para cor preta */}
       <Text style={styles.eventItemText}>Descrição: {item.Descricao}</Text>
-      <Text style={styles.eventItemText}>Data: {new Date(item.Data).toLocaleString()}</Text>
+      <Text style={styles.eventItemText}>Data: {item.Data.toLocaleString()}</Text>
       <Text style={styles.eventItemText}>Status: {item.status ? "Ativo" : "Inativo"}</Text>
-      <Text style={styles.eventItemText}>Local: {item.local ? item.local.Nome : "N/A"}</Text>
-      <Text style={styles.eventItemText}>
-        Capacidade do Local: {item.local ? item.local.Capacidade : "N/A"}
-      </Text>
-      <Text style={styles.eventItemText}>
-        Categorias:{" "}
-        {item.categorias
-          ? item.categorias.map((c: ICategoriaFormatada) => c.Nome).join(", ")
-          : "N/A"}
-      </Text>
-      <Button
-        title="Deletar"
-        onPress={() => handleDeletarEvento(item.id)}
-        color="#ff6347"
-      />
+      <Text style={styles.eventItemText}>Local: {item.local?.Nome || "N/A"}</Text>
+      <Text style={styles.eventItemText}>Categorias: {item.categorias?.map(c => c.Nome).join(", ") || "Nenhuma"}</Text>
+
+      <View style={styles.eventButtons}>
+        <Button
+          title="Editar"
+          onPress={() => prepararEdicao(item)}
+          color="#4CAF50"
+        />
+        <View style={styles.buttonSpacer} />
+        <Button
+          title="Deletar"
+          onPress={() => handleDeletarEvento(item.id)}
+          color="#ff6347"
+        />
+      </View>
     </View>
   );
 
@@ -199,9 +257,13 @@ const EventosScreen = () => {
       <Text style={styles.header}>Meus Eventos</Text>
       <Button
         title="Criar novo Evento"
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          resetForm();
+          setModalVisible(true);
+        }}
         color="#4CAF50"
       />
+
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -224,35 +286,33 @@ const EventosScreen = () => {
       <Modal
         animationType="slide"
         transparent={false}
-        visible={ModalVisible}
+        visible={modalVisible}
         onRequestClose={() => {
           setModalVisible(false);
           resetForm();
         }}
       >
         <ScrollView style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Criar Novo Evento</Text>
+          <Text style={styles.modalTitle}>
+            {eventoEditando ? "Editar Evento" : "Criar Novo Evento"}
+          </Text>
 
           <Text style={styles.label}>Nome do Evento*</Text>
           <TextInput
             style={styles.input}
             value={novoEvento.nomeEvt}
-            onChangeText={(text) =>
-              setNovoEvento({ ...novoEvento, nomeEvt: text })
-            }
+            onChangeText={(text) => setNovoEvento({ ...novoEvento, nomeEvt: text })}
             placeholder="Digite o nome do evento"
-            placeholderTextColor="#888" // Adiciona cor ao placeholder
+            placeholderTextColor="#888"
           />
 
           <Text style={styles.label}>Descrição*</Text>
           <TextInput
             style={[styles.input, styles.multilineInput]}
             value={novoEvento.Descricao}
-            onChangeText={(text) =>
-              setNovoEvento({ ...novoEvento, Descricao: text })
-            }
+            onChangeText={(text) => setNovoEvento({ ...novoEvento, Descricao: text })}
             placeholder="Digite a descrição do evento"
-            placeholderTextColor="#888" // Adiciona cor ao placeholder
+            placeholderTextColor="#888"
             multiline
             numberOfLines={4}
           />
@@ -262,7 +322,6 @@ const EventosScreen = () => {
             style={styles.dateButton}
             onPress={() => setShowDatePicker(true)}
           >
-            {/* Texto da data com cor preta garantida */}
             <Text style={{ color: '#333' }}>{novoEvento.Data.toLocaleString()}</Text>
           </TouchableOpacity>
 
@@ -280,14 +339,24 @@ const EventosScreen = () => {
             />
           )}
 
+          <Text style={styles.label}>Status</Text>
+          <Picker
+            selectedValue={novoEvento.status ? "ativo" : "inativo"}
+            onValueChange={(itemValue) =>
+              setNovoEvento({ ...novoEvento, status: itemValue === "ativo" })
+            }
+            style={styles.picker}
+            itemStyle={{ color: '#333' }}
+          >
+            <Picker.Item label="Ativo" value="ativo" />
+            <Picker.Item label="Inativo" value="inativo" />
+          </Picker>
+
           <Text style={styles.label}>Local*</Text>
           <Picker
             selectedValue={novoEvento.localId}
-            onValueChange={(itemValue) =>
-              setNovoEvento({ ...novoEvento, localId: itemValue })
-            }
+            onValueChange={(itemValue) => setNovoEvento({ ...novoEvento, localId: itemValue })}
             style={styles.picker}
-            // Adicione cor para o texto do Picker.Item caso necessário (específico para Android)
             itemStyle={{ color: '#333' }}
           >
             <Picker.Item label="Selecione um local..." value="" />
@@ -303,16 +372,14 @@ const EventosScreen = () => {
                 key={categoria.id}
                 style={[
                   styles.categoriaButton,
-                  novoEvento.categoriasIds.includes(categoria.id) &&
-                    styles.categoriaButtonSelected,
+                  novoEvento.categoriasIds.includes(categoria.id) && styles.categoriaButtonSelected,
                 ]}
                 onPress={() => toggleCategoria(categoria.id)}
               >
                 <Text
                   style={[
                     styles.categoriaText,
-                    novoEvento.categoriasIds.includes(categoria.id) &&
-                      styles.categoriaTextSelected,
+                    novoEvento.categoriasIds.includes(categoria.id) && styles.categoriaTextSelected,
                   ]}
                 >
                   {categoria.Nome}
@@ -331,8 +398,8 @@ const EventosScreen = () => {
               color="#f44336"
             />
             <Button
-              title="Criar Evento"
-              onPress={handleCriarEvento}
+              title={eventoEditando ? "Atualizar Evento" : "Criar Evento"}
+              onPress={handleCriarOuAtualizarEvento}
               disabled={loading}
               color="#4CAF50"
             />
@@ -361,13 +428,13 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     backgroundColor: "#fff",
     borderRadius: 8,
-    shadowColor: "#333", // Alterado para preto para mais visibilidade
+    shadowColor: "#333",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     elevation: 3,
   },
-  eventItemText: { // Novo estilo para textos dentro do item do evento
+  eventItemText: {
     color: '#333',
     marginBottom: 2,
   },
@@ -376,6 +443,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
     color: "#0056b3",
+  },
+  eventButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  buttonSpacer: {
+    width: 10,
   },
   loadingIndicator: {
     marginTop: 30,
@@ -412,7 +487,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
     fontSize: 16,
-    color: '#333', // Garante a cor do texto digitado
+    color: '#333',
   },
   multilineInput: {
     height: 100,
@@ -430,7 +505,7 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     borderRadius: 5,
     marginBottom: 15,
-    color: '#333', // Pode ajudar em alguns casos a garantir a cor do texto do picker
+    color: '#333',
   },
   categoriasContainer: {
     flexDirection: "row",

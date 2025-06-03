@@ -1,43 +1,29 @@
-// src/services/localService.ts
-import Parse from './parseConfig';
-import { ILocalFormatado, IParseLocal } from '@/src/types';
+import api from './api';
+import { ILocalFormatado } from '@/src/types';
 
-/**
- * Cria um novo local com Nome e Capacidade.
- * @param {object} localData - Objeto contendo Nome (string) e Capacidade (number).
- * @returns {Promise<IParseLocal>} O objeto Local do Parse salvo.
- */
-export const criarLocal = async (localData: { Nome: string; Capacidade: number }): Promise<IParseLocal> => {
-  const Local = Parse.Object.extend('Local');
-  const novoLocal = new Local() as IParseLocal; // Casting para o tipo de Parse
-
-  novoLocal.set('Nome', localData.Nome);
-  novoLocal.set('Capacidade', localData.Capacidade);
-
+export const criarLocal = async (
+  localData: { Nome: string; Capacidade: number }
+): Promise<ILocalFormatado> => {
   try {
-    const localSalvo = await novoLocal.save();
-    console.log('Local criado com sucesso:', localSalvo.id);
-    return localSalvo as IParseLocal; // Confirma o tipo de retorno
+    const response = await api.post('/classes/Local', localData);
+    return {
+      id: response.data.objectId,
+      Nome: response.data.Nome,
+      Capacidade: response.data.Capacidade,
+    };
   } catch (error) {
     console.error('Erro ao criar local:', error);
     throw error;
   }
 };
 
-/**
- * Busca todos os locais.
- * @returns {Promise<ILocalFormatado[]>} Uma lista de objetos Local formatados.
- */
 export const buscarLocais = async (): Promise<ILocalFormatado[]> => {
-  const query = new Parse.Query<IParseLocal>('Local');
   try {
-    const locais = await query.find();
-    console.log('Locais encontrados:', locais.length);
-    // Mapeia para o tipo formatado
-    return locais.map(local => ({
-      id: local.id,
-      Nome: local.get('Nome'),
-      Capacidade: local.get('Capacidade')
+    const response = await api.get('/classes/Local');
+    return response.data.results.map((local: any) => ({
+      id: local.objectId,
+      Nome: local.Nome,
+      Capacidade: local.Capacidade,
     }));
   } catch (error) {
     console.error('Erro ao buscar locais:', error);
@@ -45,20 +31,13 @@ export const buscarLocais = async (): Promise<ILocalFormatado[]> => {
   }
 };
 
-/**
- * Busca um local por ID.
- * @param {string} localId - O ID do local.
- * @returns {Promise<ILocalFormatado|null>} O objeto Local formatado ou null se não encontrado.
- */
 export const buscarLocalPorId = async (localId: string): Promise<ILocalFormatado | null> => {
-  const query = new Parse.Query<IParseLocal>('Local');
   try {
-    const local = await query.get(localId);
-    console.log('Local encontrado:', local.id);
+    const response = await api.get(`/classes/Local/${localId}`);
     return {
-      id: local.id,
-      Nome: local.get('Nome'),
-      Capacidade: local.get('Capacidade')
+      id: response.data.objectId,
+      Nome: response.data.Nome,
+      Capacidade: response.data.Capacidade,
     };
   } catch (error) {
     console.error('Erro ao buscar local por ID:', localId, error);
@@ -66,43 +45,26 @@ export const buscarLocalPorId = async (localId: string): Promise<ILocalFormatado
   }
 };
 
-/**
- * Atualiza um local existente.
- * @param {string} localId - O ID do local a ser atualizado.
- * @param {object} newData - Novos dados para o local (Nome, Capacidade).
- * @returns {Promise<IParseLocal>} O objeto Local do Parse atualizado.
- */
-export const atualizarLocal = async (localId: string, newData: { Nome?: string; Capacidade?: number }): Promise<IParseLocal> => {
-  const Local = Parse.Object.extend('Local');
-  const local = new Local();
-  local.set('objectId', localId); // Define o ID para o objeto existente
-
-  if (newData.Nome) local.set('Nome', newData.Nome);
-  if (newData.Capacidade !== undefined) local.set('Capacidade', newData.Capacidade);
-
+export const atualizarLocal = async (
+  localId: string,
+  newData: { Nome?: string; Capacidade?: number }
+): Promise<ILocalFormatado> => {
   try {
-    const localAtualizado = await local.save();
-    console.log('Local atualizado com sucesso:', localAtualizado.id);
-    return localAtualizado as IParseLocal;
+    const response = await api.put(`/classes/Local/${localId}`, newData);
+    return {
+      id: response.data.objectId,
+      Nome: response.data.Nome,
+      Capacidade: response.data.Capacidade,
+    };
   } catch (error) {
     console.error('Erro ao atualizar local:', error);
     throw error;
   }
 };
 
-/**
- * Deleta um local.
- * @param {string} localId - O ID do local a ser deletado.
- * @returns {Promise<void>}
- */
 export const deletarLocal = async (localId: string): Promise<void> => {
-  const Local = Parse.Object.extend('Local');
-  const local = new Local();
-  local.set('objectId', localId);
-
   try {
-    await local.destroy();
-    console.log('Local deletado com sucesso:', localId);
+    await api.delete(`/classes/Local/${localId}`);
   } catch (error) {
     console.error('Erro ao deletar local:', error);
     throw error;
