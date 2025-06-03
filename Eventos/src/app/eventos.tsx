@@ -53,6 +53,8 @@ const EventosScreen = () => {
     carregarDadosIniciais();
   }, []);
 
+  
+
   const carregarDadosIniciais = async () => {
   setLoading(true);
   try {
@@ -60,6 +62,7 @@ const EventosScreen = () => {
     const locaisCarregados = await buscarLocais();
     const categoriasCarregadas = await buscarCategorias();
 
+    console.log("Eventos carregados:", eventosCarregados);
     setLocais(locaisCarregados);
     setCategorias(categoriasCarregadas);
 
@@ -70,12 +73,12 @@ const EventosScreen = () => {
       Data: new Date(evento.Data.iso),
       status: evento.status,
       local: evento.local ? {
-        id: evento.local.objectId,
+        id: evento.local.id,
         Nome: evento.local.Nome,
         Capacidade: evento.local.Capacidade
       } : null,
       categorias: evento.categorias?.results?.map((cat: any) => ({
-        id: cat.objectId,
+        id: cat.id,
         Nome: cat.Nome
       })) || []
     }));
@@ -368,24 +371,26 @@ const EventosScreen = () => {
           <Text style={styles.label}>Categorias*</Text>
           <View style={styles.categoriasContainer}>
             {categorias.map((categoria) => (
-              <TouchableOpacity
-                key={categoria.id}
+            <TouchableOpacity
+              key={categoria.id}
+              style={[
+                styles.categoriaButton,
+                novoEvento.categoriasIds.includes(categoria.id) && styles.categoriaButtonSelected,
+              ]}
+              onPress={() => toggleCategoria(categoria.id)}
+            >
+              <Text
+                key={`text-${categoria.id}`}
                 style={[
-                  styles.categoriaButton,
-                  novoEvento.categoriasIds.includes(categoria.id) && styles.categoriaButtonSelected,
+                  styles.categoriaText,
+                  novoEvento.categoriasIds.includes(categoria.id) && styles.categoriaTextSelected,
                 ]}
-                onPress={() => toggleCategoria(categoria.id)}
               >
-                <Text
-                  style={[
-                    styles.categoriaText,
-                    novoEvento.categoriasIds.includes(categoria.id) && styles.categoriaTextSelected,
-                  ]}
-                >
-                  {categoria.Nome}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                {categoria.Nome}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
           </View>
 
           <View style={styles.modalButtons}>
