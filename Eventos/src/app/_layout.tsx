@@ -25,6 +25,13 @@ export default function Layout() {
           headerBackTitle: "Voltar",
         }}
       />
+      <Stack.Screen
+        name="eventosData"
+        options={{
+          title: "",
+          headerBackTitle: "Voltar",
+        }}
+      />
     </Stack>
   );
 }

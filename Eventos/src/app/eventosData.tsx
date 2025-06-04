@@ -5,14 +5,21 @@ import {
   Text,
   ActivityIndicator,
   StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 import { buscarEventos } from "@/service/eventoService";
 import { IEventoFormatado } from "@/src/types";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const EventosMaisProximos: React.FC = () => {
   const [eventos, setEventos] = useState<IEventoFormatado[]>([]);
+  const [eventosFiltrados, setEventosFiltrados] = useState<IEventoFormatado[]>(
+    []
+  );
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     const carregarEventos = async () => {
@@ -49,6 +56,8 @@ const EventosMaisProximos: React.FC = () => {
           (a, b) => a.Data.getTime() - b.Data.getTime()
         );
         setEventos(eventosOrdenados);
+        setEventosFiltrados(eventosOrdenados);
+
         setCarregando(false);
       } catch (err) {
         console.error(err);
@@ -59,6 +68,37 @@ const EventosMaisProximos: React.FC = () => {
 
     carregarEventos();
   }, []);
+
+  const handleDateChange = (event: any, selectDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectDate) {
+      setDataSelecionada(selectDate);
+      filtrarEventosPorData(selectDate);
+    }
+  };
+
+  const filtrarEventosPorData = (data: Date) => {
+    if (!data) {
+      setEventosFiltrados(eventos);
+      return;
+    }
+
+    const eventosDaData = eventos.filter((evento) => {
+      const eventoDate = new Date(evento.Data);
+      return (
+        eventoDate.getDate() === data.getDate() &&
+        eventoDate.getMonth() === data.getMonth() &&
+        eventoDate.getFullYear() === data.getFullYear()
+      );
+    });
+
+    setEventosFiltrados(eventosDaData);
+  };
+
+  const limparFiltro = () => {
+    setDataSelecionada(null);
+    setEventosFiltrados(eventos);
+  };
 
   if (carregando) {
     return (
@@ -79,11 +119,47 @@ const EventosMaisProximos: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.titulo}>Eventos Próximos</Text>
-      {eventos.length === 0 ? (
-        <Text style={styles.semResultados}>Nenhum evento encontrado.</Text>
+
+      <View style={styles.filtroContainer}>
+        <TouchableOpacity
+          style={styles.botaoFiltro}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.botaoFiltroTexto}>
+            {dataSelecionada
+              ? `Data: ${dataSelecionada.toLocaleDateString("pt-BR")}`
+              : "Selecionar Data"}
+          </Text>
+        </TouchableOpacity>
+
+        {dataSelecionada && (
+          <TouchableOpacity
+            style={[styles.botaoFiltro, styles.botaoLimpar]}
+            onPress={limparFiltro}
+          >
+            <Text style={styles.botaoFiltroTexto}>Limpar Filtro</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={dataSelecionada || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+        />
+      )}
+
+      {eventosFiltrados.length === 0 ? (
+        <Text style={styles.semResultados}>
+          {dataSelecionada
+            ? "Nenhum evento encontrado para esta data"
+            : "Nenhum evento encontrado"}
+        </Text>
       ) : (
         <View style={styles.listaEventos}>
-          {eventos.map((evento) => (
+          {eventosFiltrados.map((evento) => (
             <View key={evento.id} style={styles.cardEvento}>
               <View style={styles.eventoStatusContainer}>
                 <Text
@@ -139,10 +215,31 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#f5f5f5",
   },
+  filtroContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  botaoFiltro: {
+    backgroundColor: "#007bff",
+    padding: 12,
+    borderRadius: 6,
+    flex: 1,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  botaoLimpar: {
+    backgroundColor: "#6c757d",
+    flex: 0.5,
+  },
+  botaoFiltroTexto: {
+    color: "white",
+    fontWeight: "bold",
   },
   erro: {
     color: "red",
