@@ -17,32 +17,31 @@ import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   criarEvento,
-  buscarEventos,
   deletarEvento,
   atualizarEvento,
 } from "@/service/eventoService";
-import { buscarLocais } from "@/service/localService";
-import { buscarCategorias } from "@/service/categoriaService";
-import {
-  IEventoFormatado,
-  ILocalFormatado,
-  ICategoriaFormatada,
-} from "../types";
+import { useEventoStore } from "@/src/store/eventoStore";
+import { IEventoFormatado, ILocalFormatado, ICategoriaFormatada } from "../types";
 
 const EventosScreen = () => {
-  const [eventos, setEventos] = useState<IEventoFormatado[]>([]);
-  const [locais, setLocais] = useState<ILocalFormatado[]>([]);
-  const [categorias, setCategorias] = useState<ICategoriaFormatada[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const {
+    eventos,
+    locais,
+    categorias,
+    loading,
+    error,
+    carregarDados,
+    setLoading,
+    setError,
+  } = useEventoStore();
+
+  // Estados do componente
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
   const [eventoEditando, setEventoEditando] = useState<string | null>(null);
-  const [originalCategoriasIds, setOriginalCategoriasIds] = useState<string[]>(
-    []
-  );
-
+  const [originalCategoriasIds, setOriginalCategoriasIds] = useState<string[]>([]);
   const [novoEvento, setNovoEvento] = useState({
     nomeEvt: "",
     Descricao: "",
@@ -53,57 +52,15 @@ const EventosScreen = () => {
   });
 
   useEffect(() => {
-    carregarDadosIniciais();
+    carregarDados();
   }, []);
 
-  const carregarDadosIniciais = async () => {
-    setLoading(true);
-    try {
-      const eventosCarregados = await buscarEventos();
-      const locaisCarregados = await buscarLocais();
-      const categoriasCarregadas = await buscarCategorias();
-
-      console.log("Eventos carregados:", eventosCarregados);
-      setLocais(locaisCarregados);
-      setCategorias(categoriasCarregadas);
-
-      const eventosFormatados: IEventoFormatado[] = eventosCarregados.map(
-        (evento: any) => ({
-          id: evento.objectId,
-          NomeEvt: evento.NomeEvt,
-          Descricao: evento.Descricao,
-          Data: new Date(evento.Data.iso),
-          status: evento.status,
-          local: evento.local
-            ? {
-                id: evento.local.id || evento.local.objectId,
-                Nome: evento.local.Nome,
-                Capacidade: evento.local.Capacidade,
-              }
-            : null,
-          categorias: (
-            evento.categorias?.results ||
-            evento.categorias ||
-            []
-          ).map((cat: any) => ({
-            id: cat.objectId || cat.id,
-            Nome: cat.Nome,
-          })),
-        })
-      );
-
-      console.log("Eventos formatados:", eventosFormatados);
-      setEventos(eventosFormatados);
-    } catch (error: any) {
-      Alert.alert(
-        "Erro",
-        "Não foi possível carregar os dados.\n" + error.message
-      );
-      console.error("Erro ao carregar dados iniciais:", error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Erro", error);
+      setError(null);
     }
-  };
+  }, [error]);
 
   const prepararEdicao = (evento: IEventoFormatado) => {
     setEventoEditando(evento.id);
@@ -148,12 +105,6 @@ const EventosScreen = () => {
   };
 
   const handleCriarOuAtualizarEvento = async () => {
-    console.log("Dados sendo enviados:", {
-      ...novoEvento,
-      categoriasIds: novoEvento.categoriasIds,
-      categoriasCount: novoEvento.categoriasIds.length,
-    });
-
     if (!novoEvento.nomeEvt || !novoEvento.Descricao || !novoEvento.localId) {
       Alert.alert("Atenção", "Preencha todos os campos obrigatórios!");
       return;
@@ -207,12 +158,9 @@ const EventosScreen = () => {
 
       setModalVisible(false);
       resetForm();
-      await carregarDadosIniciais();
+      await carregarDados();
     } catch (error: any) {
-      console.error("Erro completo:", {
-        error: error,
-        response: error.response?.data,
-      });
+      console.error("Erro completo:", error);
       Alert.alert(
         "Erro",
         eventoEditando
@@ -242,7 +190,7 @@ const EventosScreen = () => {
     try {
       await deletarEvento(id);
       Alert.alert("Sucesso", "Evento deletado com sucesso!");
-      await carregarDadosIniciais();
+      await carregarDados();
     } catch (error: any) {
       Alert.alert("Erro ao deletar", error.message);
       console.error("Erro ao deletar evento:", error);

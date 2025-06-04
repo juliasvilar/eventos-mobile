@@ -1,63 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { buscarCategorias } from '@/service/categoriaService';
-import { buscarEventos } from '@/service/eventoService';
+import { useEventoStore } from '@/src/store/eventoStore';
 import { ICategoriaFormatada, IEventoFormatado } from '@/src/types';
 
 const EventosPorCategoria: React.FC = () => {
-  const [categorias, setCategorias] = useState<ICategoriaFormatada[]>([]);
+  const {
+    eventos,
+    categorias,
+    loading: carregando,
+    error: erro,
+  } = useEventoStore();
+
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string | null>(null);
-  const [eventos, setEventos] = useState<IEventoFormatado[]>([]);
-  const [carregando, setCarregando] = useState<boolean>(true);
-  const [erro, setErro] = useState<string | null>(null);
-
-  useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        setCarregando(true);
-        const [categoriasData, eventosData] = await Promise.all([
-          buscarCategorias(),
-          buscarEventos()
-        ]);
-        
-        // Converter os eventos para o formato esperado
-        const eventosFormatados: IEventoFormatado[] = eventosData.map(
-                (evento: any) => ({
-                  id: evento.objectId,
-                  NomeEvt: evento.NomeEvt,
-                  Descricao: evento.Descricao,
-                  Data: new Date(evento.Data.iso),
-                  status: evento.status,
-                  local: evento.local
-                    ? {
-                        id: evento.local.id || evento.local.objectId,
-                        Nome: evento.local.Nome,
-                        Capacidade: evento.local.Capacidade,
-                      }
-                    : null,
-                  categorias: (
-                    evento.categorias?.results ||
-                    evento.categorias ||
-                    []
-                  ).map((cat: any) => ({
-                    id: cat.objectId || cat.id,
-                    Nome: cat.Nome,
-                  })),
-                })
-              );
-        
-        setCategorias(categoriasData);
-        setEventos(eventosFormatados);
-        setCarregando(false);
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        setErro('Erro ao carregar dados. Tente novamente mais tarde.');
-        setCarregando(false);
-      }
-    };
-
-    carregarDados();
-  }, []);
 
   const handleSelecionarCategoria = (categoriaId: string) => {
     setCategoriaSelecionada(categoriaId === categoriaSelecionada ? null : categoriaId);

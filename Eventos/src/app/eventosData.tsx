@@ -7,67 +7,28 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { buscarEventos } from "@/service/eventoService";
-import { IEventoFormatado } from "@/src/types";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useEventoStore } from "@/src/store/eventoStore";
+import { IEventoFormatado } from "@/src/types";
 
 const EventosMaisProximos: React.FC = () => {
-  const [eventos, setEventos] = useState<IEventoFormatado[]>([]);
-  const [eventosFiltrados, setEventosFiltrados] = useState<IEventoFormatado[]>(
-    []
-  );
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState<string | null>(null);
+  const {
+    eventos,
+    loading: carregando,
+    error: erro,
+  } = useEventoStore();
+
+  const [eventosFiltrados, setEventosFiltrados] = useState<IEventoFormatado[]>([]);
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-
+  
   useEffect(() => {
-    const carregarEventos = async () => {
-      try {
-        setCarregando(true);
-        const eventosData = await buscarEventos();
-
-        const eventosFormatados: IEventoFormatado[] = eventosData.map(
-          (evento: any) => ({
-            id: evento.objectId,
-            NomeEvt: evento.NomeEvt,
-            Descricao: evento.Descricao,
-            Data: new Date(evento.Data.iso),
-            status: evento.status,
-            local: evento.local
-              ? {
-                  id: evento.local.id || evento.local.objectId,
-                  Nome: evento.local.Nome,
-                  Capacidade: evento.local.Capacidade,
-                }
-              : null,
-            categorias: (
-              evento.categorias?.results ||
-              evento.categorias ||
-              []
-            ).map((cat: any) => ({
-              id: cat.objectId || cat.id,
-              Nome: cat.Nome,
-            })),
-          })
-        );
-
-        const eventosOrdenados = eventosFormatados.sort(
-          (a, b) => a.Data.getTime() - b.Data.getTime()
-        );
-        setEventos(eventosOrdenados);
-        setEventosFiltrados(eventosOrdenados);
-
-        setCarregando(false);
-      } catch (err) {
-        console.error(err);
-        setErro("Erro ao carregar eventos");
-        setCarregando(false);
-      }
-    };
-
-    carregarEventos();
-  }, []);
+    // Ordenar eventos por data
+    const eventosOrdenados = [...eventos].sort(
+      (a, b) => a.Data.getTime() - b.Data.getTime()
+    );
+    setEventosFiltrados(eventosOrdenados);
+  }, [eventos]);
 
   const handleDateChange = (event: any, selectDate?: Date) => {
     setShowDatePicker(false);
