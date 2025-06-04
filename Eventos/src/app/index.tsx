@@ -21,6 +21,11 @@ export default function home() {
             title="Eventos por Categoria"
             onPress={() => router.push("/eventosCategorias")}
           />
+
+          <CustomButton
+            title="Eventos por Data"
+            onPress={() => router.push("/eventosData")}
+          />
         </View>
       </View>
     </ScrollView>

@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -35,6 +36,8 @@ const EventosScreen = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
   const [eventoEditando, setEventoEditando] = useState<string | null>(null);
   const [originalCategoriasIds, setOriginalCategoriasIds] = useState<string[]>(
     []
@@ -89,7 +92,7 @@ const EventosScreen = () => {
         })
       );
 
-      console.log("Eventos formatados:", eventosFormatados); // Para debug
+      console.log("Eventos formatados:", eventosFormatados);
       setEventos(eventosFormatados);
     } catch (error: any) {
       Alert.alert(
@@ -116,6 +119,34 @@ const EventosScreen = () => {
     setModalVisible(true);
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+    }
+
+    if (selectedDate) {
+      if (Platform.OS === "android") {
+        setTempDate(selectedDate);
+        if (event.type === "set" && !showTimePicker) {
+          setShowTimePicker(true);
+        }
+      } else {
+        setNovoEvento({ ...novoEvento, Data: selectedDate });
+      }
+    }
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      const combinedDate = new Date(tempDate);
+      combinedDate.setHours(selectedTime.getHours());
+      combinedDate.setMinutes(selectedTime.getMinutes());
+      setNovoEvento({ ...novoEvento, Data: combinedDate });
+    }
+  };
+
   const handleCriarOuAtualizarEvento = async () => {
     console.log("Dados sendo enviados:", {
       ...novoEvento,
@@ -137,7 +168,6 @@ const EventosScreen = () => {
 
     try {
       if (eventoEditando) {
-        // Calcular diferenças nas categorias
         const categoriasAtuais = new Set(novoEvento.categoriasIds);
         const categoriasOriginais = new Set(originalCategoriasIds);
 
@@ -204,13 +234,13 @@ const EventosScreen = () => {
       categoriasIds: [],
     });
     setEventoEditando(null);
-    setOriginalCategoriasIds([]); // Reset original categories
+    setOriginalCategoriasIds([]);
   };
 
   const handleDeletarEvento = async (id: string) => {
     setLoading(true);
     try {
-      await deletarEvento(id); // Using deletarEvento which only deletes the event object
+      await deletarEvento(id);
       Alert.alert("Sucesso", "Evento deletado com sucesso!");
       await carregarDadosIniciais();
     } catch (error: any) {
@@ -220,14 +250,6 @@ const EventosScreen = () => {
       setLoading(false);
     }
   };
-
-  console.log("IDs de categorias enviados:", {
-    localId: novoEvento.localId,
-    categoriasIds: novoEvento.categoriasIds,
-    todasValidas: novoEvento.categoriasIds.every(
-      (id) => typeof id === "string" && id.length > 0
-    ),
-  });
 
   const toggleCategoria = (categoriaId: string) => {
     setNovoEvento((prev) => ({
@@ -243,7 +265,14 @@ const EventosScreen = () => {
       <Text style={styles.eventTitle}>{item.NomeEvt}</Text>
       <Text style={styles.eventItemText}>Descrição: {item.Descricao}</Text>
       <Text style={styles.eventItemText}>
-        Data: {item.Data.toLocaleString()}
+        Data:{" "}
+        {item.Data.toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
       </Text>
       <Text style={styles.eventItemText}>
         Status: {item.status ? "Ativo" : "Inativo"}
@@ -344,25 +373,50 @@ const EventosScreen = () => {
           <Text style={styles.label}>Data do Evento*</Text>
           <TouchableOpacity
             style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => {
+              setTempDate(novoEvento.Data);
+              setShowDatePicker(true);
+            }}
           >
             <Text style={{ color: "#333" }}>
-              {novoEvento.Data.toLocaleString()}
+              {novoEvento.Data.toLocaleString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </Text>
           </TouchableOpacity>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={novoEvento.Data}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) {
-                  setNovoEvento({ ...novoEvento, Data: selectedDate });
-                }
-              }}
-            />
+          {Platform.OS === "ios" ? (
+            showDatePicker && (
+              <DateTimePicker
+                value={novoEvento.Data}
+                mode="datetime"
+                display="inline"
+                onChange={handleDateChange}
+              />
+            )
+          ) : (
+            <>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={tempDate}
+                  mode="time"
+                  display="default"
+                  onChange={handleTimeChange}
+                />
+              )}
+            </>
           )}
 
           <Text style={styles.label}>Status</Text>
@@ -406,7 +460,6 @@ const EventosScreen = () => {
                 onPress={() => toggleCategoria(categoria.id)}
               >
                 <Text
-                  key={`text-${categoria.id}`}
                   style={[
                     styles.categoriaText,
                     novoEvento.categoriasIds.includes(categoria.id) &&
