@@ -185,19 +185,37 @@ const EventosScreen = () => {
     setOriginalCategoriasIds([]);
   };
 
-  const handleDeletarEvento = async (id: string) => {
-    setLoading(true);
-    try {
-      await deletarEvento(id);
-      Alert.alert("Sucesso", "Evento deletado com sucesso!");
-      await carregarDados();
-    } catch (error: any) {
-      Alert.alert("Erro ao deletar", error.message);
-      console.error("Erro ao deletar evento:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleDeletarEvento = async (id: string) => {
+ 
+  Alert.alert(
+    "Confirmar exclusão",
+    "Tem certeza que deseja apagar este evento?",
+    [
+      {
+        text: "Cancelar",
+        style: "cancel", 
+      },
+      {
+        text: "Apagar",
+        style: "destructive", 
+        onPress: async () => {
+          
+          setLoading(true);
+          try {
+            await deletarEvento(id);
+            Alert.alert("Sucesso", "Evento deletado com sucesso!");
+            await carregarDados();
+          } catch (error: any) {
+            Alert.alert("Erro ao deletar", error.message);
+            console.error("Erro ao deletar evento:", error);
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ],
+  );
+};
 
   const toggleCategoria = (categoriaId: string) => {
     setNovoEvento((prev) => ({

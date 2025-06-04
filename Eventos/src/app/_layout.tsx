@@ -19,7 +19,7 @@ export default function Layout() {
         }}
       />
       <Stack.Screen
-        name="eventosCategorias"
+        name="gerenciarCategoriasLocais"
         options={{
           title: "",
           headerBackTitle: "Voltar",

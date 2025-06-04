@@ -18,8 +18,8 @@ export default function home() {
           />
 
           <CustomButton
-            title="Eventos por Categoria"
-            onPress={() => router.push("/eventosCategorias")}
+            title="Gerenciar Eventos e Categorias"
+            onPress={() => router.push("/gerenciarCategoriasLocais")}
           />
 
           <CustomButton
