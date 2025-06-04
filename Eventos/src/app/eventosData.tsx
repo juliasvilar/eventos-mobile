@@ -6,22 +6,22 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
+  Linking,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useEventoStore } from "@/src/store/eventoStore";
 import { IEventoFormatado } from "@/src/types";
+import { formToJSON } from "axios";
 
 const EventosMaisProximos: React.FC = () => {
-  const {
-    eventos,
-    loading: carregando,
-    error: erro,
-  } = useEventoStore();
+  const { eventos, loading: carregando, error: erro } = useEventoStore();
 
-  const [eventosFiltrados, setEventosFiltrados] = useState<IEventoFormatado[]>([]);
+  const [eventosFiltrados, setEventosFiltrados] = useState<IEventoFormatado[]>(
+    []
+  );
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   useEffect(() => {
     // Ordenar eventos por data
     const eventosOrdenados = [...eventos].sort(
@@ -59,6 +59,29 @@ const EventosMaisProximos: React.FC = () => {
   const limparFiltro = () => {
     setDataSelecionada(null);
     setEventosFiltrados(eventos);
+  };
+
+  const adicionarAoGoogleCalendar = (evento: IEventoFormatado) => {
+    const formatarDataParaGoogle = (data: Date) => {
+      return data.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    };
+
+    const dataInicio = formatarDataParaGoogle(evento.Data);
+    const dataFim = formatarDataParaGoogle(
+      new Date(evento.Data.getTime() + 60 * 60 * 1000)
+    );
+
+    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+      evento.NomeEvt
+    )}&details=${encodeURIComponent(
+      evento.Descricao
+    )}&dates=${dataInicio}/${dataFim}&location=${
+      evento.local ? encodeURIComponent(evento.local.Nome) : ""
+    }`;
+
+    Linking.openURL(url).catch((err) =>
+      console.error("Erro ao abrir o Google Calender:", err)
+    );
   };
 
   if (carregando) {
@@ -162,6 +185,15 @@ const EventosMaisProximos: React.FC = () => {
                   ))}
                 </View>
               )}
+
+              <TouchableOpacity
+                style={styles.botaoGoogleCalendar}
+                onPress={() => adicionarAoGoogleCalendar(evento)}
+              >
+                <Text style={styles.botaoGoogleCalendarTexto}>
+                  Adicionar ao Calendario
+                </Text>
+              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -287,6 +319,17 @@ const styles = StyleSheet.create({
   eventoCategoriaTexto: {
     fontSize: 12,
     color: "#004085",
+  },
+  botaoGoogleCalendar: {
+    backgroundColor: "#4285F4",
+    padding: 10,
+    borderRadius: 4,
+    marginTop: 10,
+    alignItems: "center",
+  },
+  botaoGoogleCalendarTexto: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 
