@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#D5DEEF",
   },
   filtroContainer: {
     flexDirection: "row",
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cardEvento: {
-    backgroundColor: "white",
+    backgroundColor: "#F2F3F7",
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,

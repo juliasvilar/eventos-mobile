@@ -1,33 +1,46 @@
-import React, { useState } from "react";
-import { ScrollView, View, Text, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import CustomButton from "../components/customButtom";
+import { View, Text, StyleSheet} from "react-native";
 
-export default function home() {
-  const router = useRouter();
-
+export default function Home() {
   return (
-    <ScrollView>
-      <View>
-        <Text> Gerenciador de Eventos</Text>
-        <Text> da sua Empresa</Text>
-        <View>
-          <CustomButton
-            title="Acessar"
-            onPress={() => router.push("/eventos")}
-          />
+    <View style={styles.fundo}>
 
-          <CustomButton
-            title="Gerenciar Eventos e Categorias"
-            onPress={() => router.push("/gerenciarCategoriasLocais")}
-          />
-
-          <CustomButton
-            title="Eventos por Data"
-            onPress={() => router.push("/eventosData")}
-          />
-        </View>
+      <View style={styles.topo}>
+        <Text style={styles.titulo}>Gerenciador de Eventos{'\n'}da sua Empresa</Text>
       </View>
-    </ScrollView>
+
+      <View style={styles.corpo}>
+        <Text style={styles.descricao}>Aplicativo desenvolvido para a disciplina de Programação Web e Mobile, simulando
+          o gerenciamento de eventos de pequenas e médias empresas.
+        </Text>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fundo: {
+    flex: 1,
+    backgroundColor: "#D5DEEF",
+    padding: 30,
+  },
+  topo: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 40,
+  },
+  titulo: {
+    fontSize: 25,
+    fontWeight: "600",
+    color: "#000",
+    maxWidth: "80%",
+    textAlign: "center",
+  },
+  corpo: {
+    marginTop: 50,
+    justifyContent: "center",
+  },
+  descricao:{
+    textAlign: "justify"
+  }
+});

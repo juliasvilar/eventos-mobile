@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { ICategoriaFormatada, ILocalFormatado } from '@/src/types';
 import { criarCategoria, deletarCategoria, atualizarCategoria, buscarCategorias } from '@/service/categoriaService';
 import { criarLocal, deletarLocal, atualizarLocal, buscarLocais } from '@/service/localService';
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 const GerenciarCategoriasLocais: React.FC = () => {
   // Estados para dados
@@ -219,17 +220,11 @@ const GerenciarCategoriasLocais: React.FC = () => {
             <View key={categoria.id} style={styles.itemContainer}>
               <Text style={styles.itemNome}>{categoria.Nome}</Text>
               <View style={styles.botoesContainer}>
-                <TouchableOpacity
-                  style={styles.botaoEditar}
-                  onPress={() => abrirModalCategoria(categoria)}
-                >
-                  <Text style={styles.botaoTexto}>Editar</Text>
+                <TouchableOpacity style={styles.iconButton} onPress={() => abrirModalCategoria(categoria)}>
+                  <FontAwesome name="pencil" size={20} color="#F7C946" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.botaoRemover}
-                  onPress={() => removerCategoria(categoria.id)}
-                >
-                  <Text style={styles.botaoTexto}>Remover</Text>
+                <TouchableOpacity onPress={() => removerCategoria(categoria.id)}>
+                  <FontAwesome name="trash" size={20} color="#E64758" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -259,17 +254,11 @@ const GerenciarCategoriasLocais: React.FC = () => {
                 <Text style={styles.itemDetalhe}>Capacidade: {local.Capacidade}</Text>
               </View>
               <View style={styles.botoesContainer}>
-                <TouchableOpacity
-                  style={styles.botaoEditar}
-                  onPress={() => abrirModalLocal(local)}
-                >
-                  <Text style={styles.botaoTexto}>Editar</Text>
+                <TouchableOpacity style={styles.iconButton} onPress={() => abrirModalLocal(local)}>
+                  <FontAwesome name="pencil" size={20} color="#F7C946" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.botaoRemover}
-                  onPress={() => removerLocal(local.id)}
-                >
-                  <Text style={styles.botaoTexto}>Remover</Text>
+                <TouchableOpacity onPress={() => removerLocal(local.id)}>
+                  <FontAwesome name="trash" size={20} color="#E64758" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -363,7 +352,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#D5DEEF',
   },
   centered: {
     flex: 1,
@@ -383,7 +372,7 @@ const styles = StyleSheet.create({
   },
   secao: {
     marginBottom: 30,
-    backgroundColor: 'white',
+    backgroundColor: '#F2F3F7',
     borderRadius: 8,
     padding: 16,
     shadowColor: '#000',
@@ -429,7 +418,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   botaoAdicionar: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#97BB81',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
@@ -438,18 +427,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '500',
   },
-  botaoEditar: {
-    backgroundColor: '#ffc107',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  botaoRemover: {
-    backgroundColor: '#dc3545',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
+  iconButton: {
+    marginRight: 20, 
   },
   botaoTexto: {
     color: 'white',

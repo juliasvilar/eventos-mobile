@@ -21,7 +21,7 @@ import {
   atualizarEvento,
 } from "@/service/eventoService";
 import { useEventoStore } from "@/src/store/eventoStore";
-import { IEventoFormatado, ILocalFormatado, ICategoriaFormatada } from "../types";
+import { IEventoFormatado } from "../types";
 
 const EventosScreen = () => {
   const {
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#D5DEEF",
   },
   header: {
     fontSize: 26,
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
   eventItem: {
     padding: 15,
     marginVertical: 8,
-    backgroundColor: "#fff",
+    backgroundColor: "#F2F3F7",
     borderRadius: 8,
     shadowColor: "#333",
     shadowOffset: { width: 0, height: 1 },
