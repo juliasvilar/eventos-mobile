@@ -1,25 +1,8 @@
 import React, { useState, useEffect } from "react";
-import {
-  ScrollView,
-  View,
-  Text,
-  Button,
-  FlatList,
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Modal,
-  TextInput,
-  TouchableOpacity,
-  Platform,
-} from "react-native";
+import { ScrollView, View, Text, Button, FlatList, ActivityIndicator, Alert, StyleSheet, Modal, TextInput, TouchableOpacity, Platform } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import {
-  criarEvento,
-  deletarEvento,
-  atualizarEvento,
-} from "@/service/eventoService";
+import { criarEvento, deletarEvento, atualizarEvento, } from "@/service/eventoService";
 import { useEventoStore } from "@/src/store/eventoStore";
 import { IEventoFormatado } from "../types";
 
@@ -54,13 +37,6 @@ const EventosScreen = () => {
   useEffect(() => {
     carregarDados();
   }, []);
-
-  useEffect(() => {
-    if (error) {
-      Alert.alert("Erro", error);
-      setError(null);
-    }
-  }, [error]);
 
   const prepararEdicao = (evento: IEventoFormatado) => {
     setEventoEditando(evento.id);
@@ -360,7 +336,7 @@ const EventosScreen = () => {
               <DateTimePicker
                 value={novoEvento.Data}
                 mode="datetime"
-                display="inline"
+                display="default"
                 onChange={handleDateChange}
               />
             )
@@ -463,8 +439,7 @@ const EventosScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#D5DEEF",
+    padding: 16,
   },
   header: {
     fontSize: 26,
@@ -474,15 +449,15 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   eventItem: {
-    padding: 15,
-    marginVertical: 8,
     backgroundColor: "#F2F3F7",
     borderRadius: 8,
-    shadowColor: "#333",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-    elevation: 3,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   eventItemText: {
     color: "#333",
@@ -512,9 +487,15 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   modalContainer: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#F2F3F7",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   modalTitle: {
     fontSize: 22,
