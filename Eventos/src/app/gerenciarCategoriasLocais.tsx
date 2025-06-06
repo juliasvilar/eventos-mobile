@@ -20,13 +20,13 @@ const GerenciarCategoriasLocais: React.FC = () => {
   const [nomeCategoria, setNomeCategoria] = useState('');
   const [nomeLocal, setNomeLocal] = useState('');
   const [capacidadeLocal, setCapacidadeLocal] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Carrega os dados otimizado
   const carregarDados = useCallback(async () => {
     try {
       setCarregando(true);
       setErro(null);
-      
       // Busca em paralelo apenas o necessário
       const [categoriasData, locaisData] = await Promise.all([
         buscarCategorias(),
@@ -46,6 +46,17 @@ const GerenciarCategoriasLocais: React.FC = () => {
   // Carrega os dados ao montar o componente
   useEffect(() => {
     carregarDados();
+  }, [carregarDados]);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await carregarDados();
+    } catch (error) {
+      console.error("Erro ao recarregar por pull-to-refresh:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
   }, [carregarDados]);
 
   // Funções para categorias (otimizadas com useCallback)
@@ -170,14 +181,10 @@ const GerenciarCategoriasLocais: React.FC = () => {
     );
   }, [carregarDados]);
 
-
-
-
-
-  if (carregando) {
+  if (carregando && !isRefreshing) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#007bff" />
         <Text>Carregando...</Text>
       </View>
     );
@@ -193,11 +200,13 @@ const GerenciarCategoriasLocais: React.FC = () => {
 
   return (
     <ScrollView style={styles.container} refreshControl={
-    <RefreshControl
-      refreshing={carregando}
-      onRefresh={carregarDados}
-    />
-  }>
+      <RefreshControl
+        refreshing={isRefreshing}
+        onRefresh={onRefresh}
+        tintColor="#007bff" 
+        colors={["#007bff"]}
+      />
+    }>
       
       <Text style={styles.titulo}>Gerenciar Categorias e Locais</Text>
 
@@ -221,7 +230,7 @@ const GerenciarCategoriasLocais: React.FC = () => {
               <Text style={styles.itemNome}>{categoria.Nome}</Text>
               <View style={styles.botoesContainer}>
                 <TouchableOpacity style={styles.iconButton} onPress={() => abrirModalCategoria(categoria)}>
-                  <FontAwesome name="pencil" size={20} color="#F7C946" />
+                  <FontAwesome name="pencil" size={20} color="#e2b536" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => removerCategoria(categoria.id)}>
                   <FontAwesome name="trash" size={20} color="#E64758" />
@@ -352,7 +361,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#D5DEEF',
   },
   centered: {
     flex: 1,
@@ -418,7 +426,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   botaoAdicionar: {
-    backgroundColor: '#97BB81',
+    backgroundColor: '#5b86c5',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,

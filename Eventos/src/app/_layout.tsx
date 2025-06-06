@@ -28,17 +28,26 @@ export default function Layout() {
           name="index"
           options={{
             tabBarIcon: ({ color }) => (
-              <FontAwesome name="home" size={22} color={color} />
+              <FontAwesome name="home" size={15} color={color} />
             ),
             title: "Início",
           }}
         />
         <Tabs.Screen
+          name="sobre"
+          options={{
+            tabBarIcon: ({ color }) => (
+              <FontAwesome name="info" size={18} color={color} />
+            ),
+            title: "Sobre",
+          }}
+        />
+        <Tabs.Screen
           name="eventos"
           options={{
-            title: "Todos os eventos",
+            title: "Eventos",
             tabBarIcon: ({ color }) => (
-              <FontAwesome name="bars" size={22} color={color} />
+              <FontAwesome name="bars" size={18} color={color} />
             ),
           }}
         />
@@ -46,16 +55,16 @@ export default function Layout() {
           name="eventosData"
           options={{
             tabBarIcon: ({ color }) => (
-              <FontAwesome name="calendar" size={22} color={color} />
+              <FontAwesome name="calendar" size={18} color={color} />
             ),
-            title: "Eventos por data",
+            title: "Calendário",
           }}
         />
         <Tabs.Screen
           name="gerenciarCategoriasLocais"
           options={{
             tabBarIcon: ({ color }) => (
-              <FontAwesome name="tag" size={22} color={color} />
+              <FontAwesome name="tag" size={18} color={color} />
             ),
             title: "Gerenciar",
           }}

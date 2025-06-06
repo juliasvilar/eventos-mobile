@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
-import {
-  ScrollView,
-  View,
-  Text,
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  Linking,
-} from "react-native";
+import { useState, useEffect, useCallback  } from "react";
+import { ScrollView, View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, Linking, RefreshControl,} from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useEventoStore } from "@/src/store/eventoStore";
 import { IEventoFormatado } from "@/src/types";
-import { formToJSON } from "axios";
 
 const EventosMaisProximos: React.FC = () => {
-  const { eventos, loading: carregando, error: erro } = useEventoStore();
+  const { eventos, loading: carregando, error: erro, carregarDados } = useEventoStore();
 
   const [eventosFiltrados, setEventosFiltrados] = useState<IEventoFormatado[]>(
     []
   );
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (!eventos.length && !carregando) { 
+      carregarDados();
+    }
+  }, [carregarDados, eventos.length, carregando]);
 
   useEffect(() => {
     // Ordenar eventos por data
@@ -29,6 +27,19 @@ const EventosMaisProximos: React.FC = () => {
     );
     setEventosFiltrados(eventosOrdenados);
   }, [eventos]);
+
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await carregarDados(); 
+    } catch (error) {
+      console.error("Erro ao recarregar:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [carregarDados]);
+
 
   const handleDateChange = (event: any, selectDate?: Date) => {
     setShowDatePicker(false);
@@ -84,7 +95,7 @@ const EventosMaisProximos: React.FC = () => {
     );
   };
 
-  if (carregando) {
+  if (carregando && !isRefreshing) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007bff" />
@@ -101,7 +112,19 @@ const EventosMaisProximos: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container}
+
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing} 
+          onRefresh={onRefresh} 
+          tintColor="#007bff" 
+          colors={["#007bff"]} 
+        />
+      }
+    >
+
+
       <Text style={styles.titulo}>Eventos Próximos</Text>
 
       <View style={styles.filtroContainer}>
@@ -135,7 +158,7 @@ const EventosMaisProximos: React.FC = () => {
         />
       )}
 
-      {eventosFiltrados.length === 0 ? (
+      {eventosFiltrados.length === 0 && !carregando ? (
         <Text style={styles.semResultados}>
           {dataSelecionada
             ? "Nenhum evento encontrado para esta data"
@@ -206,7 +229,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#D5DEEF",
   },
   filtroContainer: {
     flexDirection: "row",
@@ -219,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   botaoFiltro: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#5b86c5",
     padding: 12,
     borderRadius: 6,
     flex: 1,
@@ -321,7 +343,7 @@ const styles = StyleSheet.create({
     color: "#004085",
   },
   botaoGoogleCalendar: {
-    backgroundColor: "#4285F4",
+    backgroundColor: "#5b86c5",
     padding: 10,
     borderRadius: 4,
     marginTop: 10,
